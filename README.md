@@ -34,6 +34,8 @@ print_r($client->chatCompletions()->create([
 
 Tool file
 ```php
+use SenseNova\ChatCompletions\Attributes\Parameter;
+use SenseNova\ChatCompletions\Attributes\Tool;
 
 class Tool
 {
