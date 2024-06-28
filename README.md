@@ -37,7 +37,7 @@ Tool file
 use SenseNova\ChatCompletions\Attributes\Parameter;
 use SenseNova\ChatCompletions\Attributes\Tool;
 
-class Tool
+class MyTool
 {
     public $price = "$799";
 
@@ -56,7 +56,7 @@ class Tool
 ```
 
 ```php
-$tool=new Tool();
+$tool=new MyTool();
 $cc = $client->chatCompletions();
 $cc->setModel("SenseChat-5");
 $cc->addTool(Closure::fromCallable([$tool, "getIPhonePrice"]));
