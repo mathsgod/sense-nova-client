@@ -65,7 +65,12 @@ $cc->addTool(Closure::fromCallable([$tool, "getIPhoneReleaseDate"]));
 $cc->addMessage(["role" => "user", "content" => "get iphone 14 price and release date"]);
 
 print_R($cc->run());
+```
 
 
 
+### Models
 
+```php
+print_R($client->models()->list());
+```

@@ -13,6 +13,6 @@ class Models
 
     public function list()
     {
-        return json_decode($this->client->get("llm/models")->getBody()->getContents(), true);
+        return json_decode($this->client->get("llm/models")->getBody()->getContents(), true)["data"];
     }
 }

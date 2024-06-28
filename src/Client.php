@@ -6,10 +6,7 @@ use Firebase\JWT\JWT;
 
 class Client
 {
-
     public $client;
-    public $chatCompletions;
-    public $models;
 
     public function __construct($access_key, $secret_key)
     {
@@ -26,13 +23,15 @@ class Client
                 "Authorization" => "Bearer " . $authorization
             ]
         ]);
-
-
-        $this->models = new Models($this->client);
     }
 
     public function chatCompletions()
     {
         return new ChatCompletions($this->client);
+    }
+
+    public function models()
+    {
+        return new Models($this->client);
     }
 }
