@@ -32,6 +32,7 @@ print_r($client->chatCompletions()->create([
 
 #### Chat completions tools call
 
+Tool file
 ```php
 
 class Tool
@@ -50,11 +51,14 @@ class Tool
         return ["date" => "2023-01-01", "model" => $model];
     }
 }
+```
 
+```php
+$tool=new Tool();
 $cc = $client->chatCompletions();
 $cc->setModel("SenseChat-5");
-$cc->addTool(Closure::fromCallable([new A(), "getIPhonePrice"]));
-$cc->addTool(Closure::fromCallable([new A(), "getIPhoneReleaseDate"]));
+$cc->addTool(Closure::fromCallable([$tool, "getIPhonePrice"]));
+$cc->addTool(Closure::fromCallable([$tool, "getIPhoneReleaseDate"]));
 
 $cc->addMessage(["role" => "user", "content" => "get iphone 14 price and release date"]);
 
