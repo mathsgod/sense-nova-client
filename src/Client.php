@@ -27,8 +27,12 @@ class Client
             ]
         ]);
 
-        $this->chatCompletions = new ChatCompletions($this->client);
 
         $this->models = new Models($this->client);
+    }
+
+    public function chatCompletions()
+    {
+        return new ChatCompletions($this->client);
     }
 }
