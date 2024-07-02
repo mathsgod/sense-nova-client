@@ -214,7 +214,6 @@ class ChatCompletions
 
 
                     if ($line == "[DONE]") {
-                        die();
                         if (count($tool_calls)) {
 
                             $this->messages[] = [
