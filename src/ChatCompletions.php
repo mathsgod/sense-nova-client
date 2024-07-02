@@ -3,9 +3,12 @@
 namespace SenseNova;
 
 use Closure;
+use Generator;
 use PDO;
 use Psr\Http\Message\ResponseInterface;
 use React\EventLoop\Loop;
+use React\Http\Browser;
+use React\Stream\ReadableStreamInterface;
 use React\Stream\ThroughStream;
 use Reflection;
 use ReflectionFunction;
@@ -21,9 +24,12 @@ class ChatCompletions
     private $model;
     private $temperature = 0.8;
 
-    public function __construct(\GuzzleHttp\Client $client)
+    private $authorization;
+
+    public function __construct(\GuzzleHttp\Client $client, string $authorization)
     {
         $this->client = $client;
+        $this->authorization = $authorization;
     }
 
     public function create(array $body)
@@ -172,20 +178,109 @@ class ChatCompletions
 
     public function runAsync()
     {
-        $promise = $this->client->postAsync("llm/chat-completions", [
-            "json" => [
-                "model" => $this->model,
-                "stream" => true,
-                "messages" => $this->messages,
-                "tools" => $this->tools
-            ],
+
+        $broswer = new Browser();
+
+
+        $promise = $broswer->requestStreaming("POST", "https://api.sensenova.cn/v1/llm/chat-completions", [
+            "Content-Type" => "application/json",
+            "Authorization" => "Bearer " . $this->authorization
+        ], json_encode([
+            "model" => $this->model,
             "stream" => true,
-        ]);
+            "messages" => $this->messages,
+            "tools" => $this->tools
+        ]));
+
 
         $stream = new ThroughStream();
 
-        $promise->then(function (ResponseInterface $response) use ($stream) {
-            $body = $response->getBody();
+        $promise->then(function (ResponseInterface $response) use (&$stream) {
+
+            $tool_calls = [];
+            $s = $response->getBody();
+            assert($s instanceof ReadableStreamInterface);
+            $s->on("data", function ($chunk) use (&$stream, &$tool_calls) {
+
+                $lines = explode("\n\n", $chunk);
+                //filter out empty lines
+                $lines = array_filter($lines);
+                foreach ($lines as $line) {
+
+                    //remove data:
+                    $line = trim(substr($line, 5));
+
+                    if ($line == "[DONE]") {
+                        if (count($tool_calls)) {
+
+                            $this->messages[] = [
+                                "role" => "assistant",
+                                "tool_calls" => $tool_calls,
+                            ];
+
+                            foreach ($tool_calls as $tool_call) {
+                                //execute function
+
+                                $this->messages[] = [
+                                    "role" => "tool",
+                                    "tool_call_id" => $tool_call["id"],
+                                    "content" => json_encode($this->executeFunction($tool_call["function"]), JSON_UNESCAPED_UNICODE),
+                                ];
+                            }
+
+                            $s1 = $this->runAsync();
+                            $s1->on('data', function ($data) use ($stream) {
+                                $stream->write($data);
+                            });
+                            $s1->on("end", function () use ($stream) {
+                                $stream->end();
+                            });
+
+                            $s1->on("close", function () use ($stream) {
+                                $stream->close();
+                            });
+                        } else {
+                            $stream->write("data: [DONE]");
+                            $stream->end();
+                            $stream->close();
+                        }
+                        return;
+                    }
+
+
+
+                    $message = json_decode($line, true)["data"];
+
+
+                    //print_R($message);
+
+
+                    //if (isset($message["usage"])) {
+                    //  $this->usages[] = $message["usage"];
+                    //  continue;
+                    //}
+
+                    if (isset($message["choices"][0]["delta"])) {
+                        //$s->write("data: " . $delta["content"] . "\n\n");
+                        $contents[] = $message["choices"][0]["delta"];
+                        $stream->write("data: " . $line . "\n\n");
+                        return;
+                    }
+
+                    if (isset($delta["tool_calls"])) {
+                        $tool_call = $delta["tool_calls"][0];
+
+                        if (isset($tool_call["id"])) {
+                            $tool_calls[] = $tool_call;
+                        } else {
+                            $index = intval($tool_call["index"]);
+                            $tool_calls[$index]["function"]["arguments"] .= $tool_call["function"]["arguments"];
+                        }
+                    }
+                }
+            });
+
+            /* $body = $response->getBody();
             $next_chunk = "";
             $tool_calls = [];
 
@@ -279,8 +374,9 @@ class ChatCompletions
                         }
                     }
                 }
-            }
+            } */
         });
+
         return $stream;
     }
 }
