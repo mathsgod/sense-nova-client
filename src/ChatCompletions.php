@@ -181,17 +181,17 @@ class ChatCompletions
 
         $broswer = new Browser();
 
-
-        $promise = $broswer->requestStreaming("POST", "https://api.sensenova.cn/v1/llm/chat-completions", [
-            "Content-Type" => "application/json",
-            "Authorization" => "Bearer " . $this->authorization
-        ], json_encode([
+        $body = json_encode([
             "model" => $this->model,
             "stream" => true,
             "messages" => $this->messages,
             "tools" => $this->tools
-        ]));
+        ], JSON_UNESCAPED_UNICODE);
 
+        $promise = $broswer->requestStreaming("POST", "https://api.sensenova.cn/v1/llm/chat-completions", [
+            "Content-Type" => "application/json",
+            "Authorization" => "Bearer " . $this->authorization
+        ], $body);
 
         $stream = new ThroughStream();
 
@@ -201,6 +201,7 @@ class ChatCompletions
             $s = $response->getBody();
             assert($s instanceof ReadableStreamInterface);
             $s->on("data", function ($chunk) use (&$stream, &$tool_calls) {
+
 
                 $lines = explode("\n\n", $chunk);
                 //filter out empty lines
@@ -212,7 +213,6 @@ class ChatCompletions
 
                     if ($line == "[DONE]") {
                         if (count($tool_calls)) {
-
                             $this->messages[] = [
                                 "role" => "assistant",
                                 "tool_calls" => $tool_calls,
@@ -260,21 +260,26 @@ class ChatCompletions
                     //  continue;
                     //}
 
-                    if (isset($message["choices"][0]["delta"])) {
+                    if ($message["choices"][0]["delta"] != "") {
                         //$s->write("data: " . $delta["content"] . "\n\n");
                         $contents[] = $message["choices"][0]["delta"];
                         $stream->write("data: " . $line . "\n\n");
                         return;
                     }
 
-                    if (isset($delta["tool_calls"])) {
-                        $tool_call = $delta["tool_calls"][0];
 
-                        if (isset($tool_call["id"])) {
-                            $tool_calls[] = $tool_call;
-                        } else {
-                            $index = intval($tool_call["index"]);
-                            $tool_calls[$index]["function"]["arguments"] .= $tool_call["function"]["arguments"];
+
+                    if (isset($message["choices"][0]["tool_calls"])) {
+                        $tool_calls = $message["choices"][0]["tool_calls"];
+
+                        foreach ($tool_calls as $tool_call) {
+
+                            if (isset($tool_call["id"])) {
+                                $tool_calls[] = $tool_call;
+                            } else {
+                                $index = intval($tool_call["index"]);
+                                $tool_calls[$index]["function"]["arguments"] .= $tool_call["function"]["arguments"];
+                            }
                         }
                     }
                 }
