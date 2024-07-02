@@ -1,4 +1,4 @@
-## SenseNovo php client
+## SenseNova php client
 
 ### Authentication
 
