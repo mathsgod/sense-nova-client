@@ -212,7 +212,6 @@ class ChatCompletions
                     //remove data:
                     $line = substr($line, 5);
 
-                    echo $line;
 
                     if ($line == "[DONE]") {
                         die();
@@ -270,7 +269,7 @@ class ChatCompletions
                         continue;
                     }
 
-                    /*                if (isset($delta["tool_calls"])) {
+                    if (isset($delta["tool_calls"])) {
                         $tool_call = $delta["tool_calls"][0];
 
                         if (isset($tool_call["id"])) {
@@ -279,7 +278,7 @@ class ChatCompletions
                             $index = intval($tool_call["index"]);
                             $tool_calls[$index]["function"]["arguments"] .= $tool_call["function"]["arguments"];
                         }
-                    } */
+                    }
                 }
             }
         });

@@ -11,7 +11,6 @@
         "guzzlehttp/guzzle": "^7.8",
         "firebase/php-jwt": "^6.10",
         "react/stream": "^1.4",
-        "react/http": "^1.10",
         "react/event-loop": "^1.5"
     },
     "autoload": {
