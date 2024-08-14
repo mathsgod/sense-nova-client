@@ -32,14 +32,12 @@ class ChatCompletions
         $this->authorization = $authorization;
     }
 
-
-
     public function create(array $body)
     {
         $resp = $this->client->post("llm/chat-completions", [
             "json" => $body
         ]);
-        return json_decode($resp->getBody()->getContents(), true)["data"];
+        return json_decode($resp->getBody()->getContents(), true);
     }
 
     public function addTool(Closure $tool)
@@ -177,6 +175,8 @@ class ChatCompletions
         $func = $this->tools_map[$name];
         return $func->invoke(...$arguments);
     }
+
+
 
     public function createStream(array $body)
     {
